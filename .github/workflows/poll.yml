@@ -1,0 +1,64 @@
+name: Poll for new CiviCRM release
+
+# Polls latest.civicrm.org on a schedule. When it reports a stable version for
+# which no civicrm-fpm image exists in GHCR yet, it calls build-images.yml to
+# build that version. Can also be run manually.
+on:
+  schedule:
+    - cron: '0 6 * * *'   # daily at 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: poll-civicrm
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      needs_build: ${{ steps.check.outputs.needs_build }}
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check latest stable vs. published images
+        id: check
+        run: |
+          VERSION=$(curl -fsSL https://latest.civicrm.org/stable.php | tr -d '[:space:]')
+          if [ -z "$VERSION" ]; then
+            echo "Could not resolve a version from latest.civicrm.org" >&2
+            exit 1
+          fi
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER}/civicrm-fpm:${VERSION}"
+
+          if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "$IMAGE already exists — nothing to build."
+            NEEDS_BUILD=false
+          else
+            echo "$IMAGE not found — will build ${VERSION}."
+            NEEDS_BUILD=true
+          fi
+          {
+            echo "version=${VERSION}"
+            echo "needs_build=${NEEDS_BUILD}"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: check
+    if: needs.check.outputs.needs_build == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-images.yml
+    with:
+      civicrm_version: ${{ needs.check.outputs.version }}

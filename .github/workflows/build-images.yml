@@ -1,10 +1,16 @@
 name: Build and push images
 
 on:
-  push:
-    tags:
-      - '*'
   workflow_dispatch:
+    inputs:
+      civicrm_version:
+        description: 'CiviCRM version to build'
+        required: true
+        type: string
+  # Called by poll.yml when latest.civicrm.org reports a version we haven't
+  # built yet. (workflow_dispatch can't be used for that: a GITHUB_TOKEN-
+  # triggered dispatch does not start a new run.)
+  workflow_call:
     inputs:
       civicrm_version:
         description: 'CiviCRM version to build'
