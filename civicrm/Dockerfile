@@ -18,6 +18,8 @@ COPY civicrm.ini /usr/local/etc/php/conf.d/civicrm.ini
 RUN curl -LsS https://download.civicrm.org/cv/cv.phar -o /usr/local/bin/cv \
     && chmod +x /usr/local/bin/cv
 
+RUN mkdir /var/www/.cv && chown 33:33 /var/www/.cv
+
 # Copy the downloaded tarball to /var/www/html as the www-data user (uid 33).
 # --link makes this an independent, content-addressed layer so the identical
 # COPY in nginx/Dockerfile produces the same digest and the registry stores it
