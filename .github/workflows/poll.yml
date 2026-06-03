@@ -39,7 +39,7 @@ jobs:
             exit 1
           fi
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE="ghcr.io/${OWNER}/civicrm-fpm:${VERSION}"
+          IMAGE="ghcr.io/${OWNER}/civicrm-fpm:${VERSION}-php8.4"
 
           if docker manifest inspect "$IMAGE" > /dev/null 2>&1; then
             echo "$IMAGE already exists — nothing to build."
