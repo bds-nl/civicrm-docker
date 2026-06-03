@@ -1,6 +1,7 @@
 # BASE_IMAGE can be overridden (e.g. by CI) to point at another registry/tag.
 # Defaults to the Docker Hub image used by build.sh.
-ARG BASE_IMAGE=ghcr.io/bds-nl/civicrm-base:latest
+ARG PHP_VERSION=8.4
+ARG BASE_IMAGE=ghcr.io/bds-nl/civicrm-base:php${PHP_VERSION}
 
 FROM ${BASE_IMAGE} AS build
 

@@ -1,9 +1,11 @@
-ARG CIVICRM_VERSION=latest
+ARG PHP_VERSION=8.4
+ARG CIVICRM_VERSION
+
 # FPM_IMAGE can be overridden (e.g. by CI) to point at another registry.
 # Defaults to the Docker Hub image used by build.sh.
-ARG FPM_IMAGE=ghcr.io/bds-nl/civicrm-fpm
+ARG FPM_IMAGE=ghcr.io/bds-nl/civicrm-fpm:${CIVICRM_VERSION}-php${PHP_VERSION}
 
-FROM ${FPM_IMAGE}:${CIVICRM_VERSION} AS build
+FROM ${FPM_IMAGE} AS build
 
 FROM nginx:alpine
 

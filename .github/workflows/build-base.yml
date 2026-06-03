@@ -46,6 +46,5 @@ jobs:
             PHP_VERSION=${{ inputs.php_version }}
           tags: |
             ${{ steps.meta.outputs.base }}:${{ inputs.php_version }}
-            ${{ steps.meta.outputs.base }}:latest
           cache-from: type=gha,scope=base
           cache-to: type=gha,scope=base,mode=max

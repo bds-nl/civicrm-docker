@@ -7,6 +7,10 @@ on:
         description: 'CiviCRM version to build'
         required: true
         type: string
+      php_version:
+        description: 'PHP version'
+        required: false
+        type: string
   # Called by poll.yml when latest.civicrm.org reports a version we haven't
   # built yet. (workflow_dispatch can't be used for that: a GITHUB_TOKEN-
   # triggered dispatch does not start a new run.)
@@ -15,6 +19,10 @@ on:
       civicrm_version:
         description: 'CiviCRM version to build'
         required: true
+        type: string
+      php_version:
+        description: 'PHP version'
+        required: false
         type: string
 
 concurrency:
@@ -30,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
+      php_version: ${{ steps.meta.outputs.php_version }}
       fpm: ${{ steps.meta.outputs.fpm }}
       nginx: ${{ steps.meta.outputs.nginx }}
     steps:
@@ -41,9 +50,15 @@ jobs:
           else
             VERSION="${GITHUB_REF_NAME#v}"
           fi
+          if [ -n "${{ inputs.php_version }}" ]; then
+            PHP_VERSION="${{ inputs.php_version }}"
+          else
+            PHP_VERSION="8.4"
+          fi
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           {
             echo "version=${VERSION}"
+            echo "php_version=${PHP_VERSION}"
             echo "fpm=ghcr.io/${OWNER}/civicrm-fpm"
             echo "nginx=ghcr.io/${OWNER}/civicrm-nginx"
           } >> "$GITHUB_OUTPUT"
@@ -76,9 +91,9 @@ jobs:
           push: true
           build-args: |
             CIVICRM_VERSION=${{ needs.meta.outputs.version }}
+            PHP_VERSION=${{ needs.meta.outputs.php_version }}
           tags: |
-            ${{ needs.meta.outputs.fpm }}:${{ needs.meta.outputs.version }}
-            ${{ needs.meta.outputs.fpm }}:latest
+            ${{ needs.meta.outputs.fpm }}:${{ needs.meta.outputs.version }}-php${{ needs.meta.outputs.php_version }}
           cache-from: type=gha,scope=fpm
           cache-to: type=gha,scope=fpm,mode=max
 
@@ -105,10 +120,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
-            FPM_IMAGE=${{ needs.meta.outputs.fpm }}
             CIVICRM_VERSION=${{ needs.meta.outputs.version }}
+            PHP_VERSION=${{ needs.meta.outputs.php_version }}
           tags: |
-            ${{ needs.meta.outputs.nginx }}:${{ needs.meta.outputs.version }}
-            ${{ needs.meta.outputs.nginx }}:latest
+            ${{ needs.meta.outputs.nginx }}:${{ needs.meta.outputs.version }}-php${{ needs.meta.outputs.php_version }}
           cache-from: type=gha,scope=nginx
           cache-to: type=gha,scope=nginx,mode=max
