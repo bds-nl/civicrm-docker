@@ -94,6 +94,7 @@ jobs:
             PHP_VERSION=${{ needs.meta.outputs.php_version }}
           tags: |
             ${{ needs.meta.outputs.fpm }}:${{ needs.meta.outputs.version }}-php${{ needs.meta.outputs.php_version }}
+            ${{ needs.meta.outputs.fpm }}:latest
           cache-from: type=gha,scope=fpm
           cache-to: type=gha,scope=fpm,mode=max
 
@@ -124,5 +125,6 @@ jobs:
             PHP_VERSION=${{ needs.meta.outputs.php_version }}
           tags: |
             ${{ needs.meta.outputs.nginx }}:${{ needs.meta.outputs.version }}-php${{ needs.meta.outputs.php_version }}
+            ${{ needs.meta.outputs.fpm }}:latest
           cache-from: type=gha,scope=nginx
           cache-to: type=gha,scope=nginx,mode=max
