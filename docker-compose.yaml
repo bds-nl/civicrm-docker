@@ -1,0 +1,40 @@
+name: civicrm
+services:
+
+  civicrm:
+    image: ghcr.io/bds-nl/civicrm-fpm:latest
+    ports:
+    - "8080:8080"
+    user: 33:33
+    volumes:
+    - civicrm_public:/var/www/html/public
+    - civicrm_private:/var/www/html/private
+    - civicrm_ext:/var/www/html/ext
+    depends_on:
+    - db
+
+  nginx:
+    image: ghcr.io/bds-nl/civicrm-nginx:latest
+    network_mode: "service:civicrm"
+    volumes:
+    - civicrm_public:/var/www/html/public
+    - civicrm_private:/var/www/html/private
+    - civicrm_ext:/var/www/html/ext
+    depends_on:
+    - civicrm
+
+  db:
+    image: mariadb:latest
+    environment:
+      MYSQL_DATABASE: civicrm
+      MYSQL_USER: civicrm
+      MYSQL_PASSWORD: civicrm
+      MYSQL_ROOT_PASSWORD: rootpw
+    volumes:
+    - db_data:/var/lib/mysql
+
+volumes:
+  civicrm_public:
+  civicrm_private:
+  civicrm_ext:
+  db_data:
