@@ -1,0 +1,100 @@
+name: Build and push images
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+    inputs:
+      civicrm_version:
+        description: 'CiviCRM version to build'
+        required: true
+        type: string
+
+concurrency:
+  group: build-images-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version and image names
+        id: meta
+        run: |
+          if [ -n "${{ inputs.civicrm_version }}" ]; then
+            VERSION="${{ inputs.civicrm_version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          {
+            echo "version=${VERSION}"
+            echo "base=ghcr.io/${OWNER}/civicrm-base"
+            echo "fpm=ghcr.io/${OWNER}/civicrm-fpm"
+            echo "nginx=ghcr.io/${OWNER}/civicrm-nginx"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # base -> fpm -> nginx form a chain: each pushed image is the FROM for the
+      # next, so dependent builds pull the just-pushed multi-arch manifest.
+      - name: Build and push base
+        uses: docker/build-push-action@v6
+        with:
+          context: ./base
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.base }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.base }}:latest
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,scope=base,mode=max
+
+      - name: Build and push fpm
+        uses: docker/build-push-action@v6
+        with:
+          context: ./civicrm
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            BASE_IMAGE=${{ steps.meta.outputs.base }}:${{ steps.meta.outputs.version }}
+            CIVICRM_VERSION=${{ steps.meta.outputs.version }}
+          tags: |
+            ${{ steps.meta.outputs.fpm }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.fpm }}:latest
+          cache-from: type=gha,scope=fpm
+          cache-to: type=gha,scope=fpm,mode=max
+
+      - name: Build and push nginx
+        uses: docker/build-push-action@v6
+        with:
+          context: ./nginx
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            FPM_IMAGE=${{ steps.meta.outputs.fpm }}
+            CIVICRM_VERSION=${{ steps.meta.outputs.version }}
+          tags: |
+            ${{ steps.meta.outputs.nginx }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.nginx }}:latest
+          cache-from: type=gha,scope=nginx
+          cache-to: type=gha,scope=nginx,mode=max
