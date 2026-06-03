@@ -10,4 +10,6 @@ FROM nginx:alpine
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY default.conf /etc/nginx/conf.d/default.conf
 
-COPY --from=build  --chown=www-data:www-data /var/www/html /var/www/html
+# Must mirror the COPY in civicrm/Dockerfile exactly (--link, numeric --chown,
+# same dest path) so both images share one deduplicated layer in the registry.
+COPY --link --from=build --chown=33:33 /var/www/html /var/www/html
