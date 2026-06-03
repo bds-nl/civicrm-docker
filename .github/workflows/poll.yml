@@ -53,7 +53,7 @@ jobs:
             echo "needs_build=${NEEDS_BUILD}"
           } >> "$GITHUB_OUTPUT"
 
-  build:
+  build-php8-4:
     needs: check
     if: needs.check.outputs.needs_build == 'true'
     permissions:
@@ -62,3 +62,15 @@ jobs:
     uses: ./.github/workflows/build-images.yml
     with:
       civicrm_version: ${{ needs.check.outputs.version }}
+      php_version: 8.4
+
+  build-php8-5:
+    needs: check
+    if: needs.check.outputs.needs_build == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-images.yml
+    with:
+      civicrm_version: ${{ needs.check.outputs.version }}
+      php_version: 8.5
