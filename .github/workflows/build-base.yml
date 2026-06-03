@@ -1,0 +1,51 @@
+name: Build and push base image
+
+# Manual only — the base image rarely changes, so it is not rebuilt on every
+# CiviCRM release. The fpm image's FROM defaults to civicrm-base:latest, so
+# rebuilding this image updates what subsequent fpm builds pull.
+on:
+  workflow_dispatch:
+    inputs:
+      php_version:
+        description: 'PHP version'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  base:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Resolve image name
+        id: meta
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "base=ghcr.io/${OWNER}/civicrm-base" >> "$GITHUB_OUTPUT"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push base
+        uses: docker/build-push-action@v6
+        with:
+          context: ./base
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            PHP_VERSION=${{ inputs.php_version }}
+          tags: |
+            ${{ steps.meta.outputs.base }}:${{ inputs.php_version }}
+            ${{ steps.meta.outputs.base }}:latest
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,scope=base,mode=max

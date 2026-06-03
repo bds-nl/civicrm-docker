@@ -1,4 +1,6 @@
-FROM php:8.4.21-fpm-trixie
+# PHP_VERSION can be overridden (e.g. by CI). Trixie base is kept fixed.
+ARG PHP_VERSION=8.4
+FROM php:${PHP_VERSION}-fpm-trixie
 
 # Install required packages (including those required for PHP extensions).
 #
