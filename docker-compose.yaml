@@ -7,9 +7,9 @@ services:
     - "8080:8080"
     user: 33:33
     volumes:
-    - civicrm_public:/var/www/html/public
-    - civicrm_private:/var/www/html/private
-    - civicrm_ext:/var/www/html/ext
+    - public:/var/www/html/public
+    - private:/var/www/html/private
+    - ext:/var/www/html/ext
     depends_on:
     - db
 
@@ -17,9 +17,9 @@ services:
     image: ghcr.io/bds-nl/civicrm-nginx:latest
     network_mode: "service:civicrm"
     volumes:
-    - civicrm_public:/var/www/html/public
-    - civicrm_private:/var/www/html/private
-    - civicrm_ext:/var/www/html/ext
+    - public:/var/www/html/public
+    - private:/var/www/html/private
+    - ext:/var/www/html/ext
     depends_on:
     - civicrm
 
@@ -31,10 +31,10 @@ services:
       MYSQL_PASSWORD: civicrm
       MYSQL_ROOT_PASSWORD: rootpw
     volumes:
-    - db_data:/var/lib/mysql
+    - db:/var/lib/mysql
 
 volumes:
-  civicrm_public:
-  civicrm_private:
-  civicrm_ext:
-  db_data:
+  public:
+  private:
+  ext:
+  db:
